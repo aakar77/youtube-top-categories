@@ -28,16 +28,18 @@ producer = KafkaProducer(bootstrap_servers= ['localhost:9092'])
 
 API_SERVICE_NAME = 'youtube'
 API_VERSION = 'v3'
-
+API_KEY = 'KEY'
 
 def get_authenticated_service():
     ###flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
     ###credentials = flow.run_console()
-    return build(API_SERVICE_NAME, API_VERSION, developerKey = 'KEY')
+    return build(API_SERVICE_NAME, API_VERSION, developerKey = API_KEY )
 
 def model_video_response(response, category):
 
     data = {}
+    d={}
+
 
     for video in response['items']:
 
@@ -59,11 +61,36 @@ def model_video_response(response, category):
 
         json_data = json.dumps(data)
 
-        print(json_data)
-	
-	#producer = KafkaProducer(value_serializer = lambda v:json.dumps(v).encode('utf-8'))
-    
-	producer.send('ptest', json.dumps(data))
+        # print(json_data)
+
+        response1=videos_list_by_id(client,part='statistics',id=data['videoId'])
+
+       # print(response1)
+        try :
+            for v in response1['items']:
+                d['viewCount']=v['statistics']['viewCount']
+                d['likeCount'] = v['statistics']['likeCount']
+                d['dislikeCount'] = v['statistics']['dislikeCount']
+                d['favoriteCount'] = v['statistics']['favoriteCount']
+                d['commentCount'] = v['statistics']['commentCount']
+                d['videoId'] = data['videoId']
+                json_d = json.dumps(d)
+                #print(json_d)
+        except Exception as e:
+            print "In Error: for " + d['videoId'] + "Like Count:" + d['likeCount']
+        else:
+            print "Success for Video ID"+d['videoId']
+            producer.send('statistics_topic', json.dumps(d))
+
+    producer.send('videos_topic', json.dumps(data))
+
+
+    '''
+    Not to be disturbed
+        #producer = KafkaProducer(value_serializer = lambda v:json.dumps(v).encode('utf-8'))
+    '''
+
+
 
 
 def model_category_response(response):
@@ -152,6 +179,16 @@ def search_list_by_keyword(client, **kwargs):
     ).execute()
 
     return model_video_response(response,category)
+
+def videos_list_by_id(client, **kwargs):
+  # See full sample for function
+  kwargs = remove_empty_kwargs(**kwargs)
+
+  response = client.videos().list(
+    **kwargs
+  ).execute()
+
+  return response
 
 
 
