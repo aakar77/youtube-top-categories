@@ -2,15 +2,19 @@
 
 import os
 import json
+import time
 import google.oauth2.credentials
+from datetime import datetime, timedelta
+
+
 
 import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-#Kafka imports 
-from kafka import KafkaProducer 
+#Kafka imports
+from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
 producer = KafkaProducer(bootstrap_servers= ['localhost:9092'])
@@ -28,7 +32,7 @@ producer = KafkaProducer(bootstrap_servers= ['localhost:9092'])
 
 API_SERVICE_NAME = 'youtube'
 API_VERSION = 'v3'
-API_KEY = 'KEY'
+API_KEY = ''
 
 def get_authenticated_service():
     ###flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
@@ -39,64 +43,62 @@ def model_video_response(response, category):
 
     data = {}
     d={}
+    if response == None:
+        print("No data for category")
+    else:
+        for video in response['items']:
+
+            data['videoId'] = video['id']['videoId']
+
+            data['publishedAt'] = video['snippet']['publishedAt']
+
+            data['channelId'] = video['snippet']['channelId']
+
+            data['title'] = video['snippet']['title']
+
+            data['description'] = video['snippet']['description']
+
+            data['url'] = video['snippet']['thumbnails']['default']['url']
+
+            data['channelTitle'] = video['snippet']['channelTitle']
+
+            data['category'] = category
+
+            json_data = json.dumps(data)
+
+            # print(json_data)
+
+            response1=videos_list_by_id(client,part='statistics',id=data['videoId'])
+
+           # print(response1)
+            try :
+                for v in response1['items']:
+                    d['viewCount']=v['statistics']['viewCount']
+                    d['likeCount'] = v['statistics']['likeCount']
+                    d['dislikeCount'] = v['statistics']['dislikeCount']
+                    d['favoriteCount'] = v['statistics']['favoriteCount']
+                    d['commentCount'] = v['statistics']['commentCount']
+                    d['videoId'] = data['videoId']
+                    json_d = json.dumps(d)
+                    #print(json_d)
+            except Exception as e:
+                print "Error"
+            else:
+                print "Success for Video ID"+d['videoId']
+                producer.send('statistics_topic', json.dumps(d))
+
+            print str(data) + "\n"
+            producer.send('videos_topic', json.dumps(data))
 
 
-    for video in response['items']:
-
-        data['videoId'] = video['id']['videoId']
-
-        data['publishedAt'] = video['snippet']['publishedAt']
-
-        data['channelId'] = video['snippet']['channelId']
-
-        data['title'] = video['snippet']['title']
-
-        data['description'] = video['snippet']['description']
-
-        data['url'] = video['snippet']['thumbnails']['default']['url']
-
-        data['channelTitle'] = video['snippet']['channelTitle']
-
-        data['category'] = category
-
-        json_data = json.dumps(data)
-
-        # print(json_data)
-
-        response1=videos_list_by_id(client,part='statistics',id=data['videoId'])
-
-       # print(response1)
-        try :
-            for v in response1['items']:
-                d['viewCount']=v['statistics']['viewCount']
-                d['likeCount'] = v['statistics']['likeCount']
-                d['dislikeCount'] = v['statistics']['dislikeCount']
-                d['favoriteCount'] = v['statistics']['favoriteCount']
-                d['commentCount'] = v['statistics']['commentCount']
-                d['videoId'] = data['videoId']
-                json_d = json.dumps(d)
-                #print(json_d)
-        except Exception as e:
-            print "In Error: for " + d['videoId'] + "Like Count:" + d['likeCount']
-        else:
-            print "Success for Video ID"+d['videoId']
-            producer.send('statistics_topic', json.dumps(d))
-
-    producer.send('videos_topic', json.dumps(data))
-
-
-    '''
-    Not to be disturbed
-        #producer = KafkaProducer(value_serializer = lambda v:json.dumps(v).encode('utf-8'))
-    '''
-
-
-
+        '''
+        Not to be disturbed
+            #producer = KafkaProducer(value_serializer = lambda v:json.dumps(v).encode('utf-8'))
+        '''
 
 def model_category_response(response):
     data = {}
     categories = []
-
 
     for c in response['items']:
         categories.append(c['snippet']['title'])
@@ -127,7 +129,55 @@ def build_resource(properties):
 
             if pa == (len(prop_array) - 1):
                 # Leave properties without values out of inserted resource.
-                if properties[p]:
+                iffor video in response['items']:
+
+            data['videoId'] = video['id']['videoId']
+
+            data['publishedAt'] = video['snippet']['publishedAt']
+
+            data['channelId'] = video['snippet']['channelId']
+
+            data['title'] = video['snippet']['title']
+
+            data['description'] = video['snippet']['description']
+
+            data['url'] = video['snippet']['thumbnails']['default']['url']
+
+            data['channelTitle'] = video['snippet']['channelTitle']
+
+            data['category'] = category
+
+            json_data = json.dumps(data)
+
+            # print(json_data)
+
+            response1=videos_list_by_id(client,part='statistics',id=data['videoId'])
+
+           # print(response1)
+            try :
+                for v in response1['items']:
+                    d['viewCount']=v['statistics']['viewCount']
+                    d['likeCount'] = v['statistics']['likeCount']
+                    d['dislikeCount'] = v['statistics']['dislikeCount']
+                    d['favoriteCount'] = v['statistics']['favoriteCount']
+                    d['commentCount'] = v['statistics']['commentCount']
+                    d['videoId'] = data['videoId']
+                    json_d = json.dumps(d)
+                    #print(json_d)
+            except Exception as e:
+                print "Error"
+            else:
+                print "Success for Video ID"+d['videoId']
+                producer.send('statistics_topic', json.dumps(d))
+
+            print str(data) + "\n"
+            producer.send('videos_topic', json.dumps(data))
+
+
+        '''
+        Not to be disturbed
+            #producer = KafkaProducer(value_serializer = lambda v:json.dumps(v).encode('utf-8'))
+        ''' properties[p]:
                     if is_array:
                         ref[key] = properties[p].split(',')
                     else:
@@ -204,15 +254,19 @@ if __name__ == '__main__':
 
 
 
+
+    i = 0
     for category in categories:
+
+        #nine_hours_from_now = datetime.now().isoformat() + timedelta(hours=9)
 
         #print("The category is {}".format(category))
         search_list_by_keyword(client,
-                               part='snippet',
-                               maxResults=25,
+                              part='snippet',
+                              maxResults=50,
                               q=category,
-                              publishedAfter='2017-11-12T00:00:00Z',
+                              publishedBefore='2017-07-16T19:20:30-03:00',
                               type='video')
-        print()
-
-
+        i = i+1
+        time.sleep(1)
+        print category + str(i)
