@@ -5,10 +5,8 @@ import json
 import time
 import google.oauth2.credentials
 import datetime
+import requests
 from rfc3339 import rfc3339
-
-
-
 
 import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
@@ -34,7 +32,8 @@ producer = KafkaProducer(bootstrap_servers= ['localhost:9092'])
 
 API_SERVICE_NAME = 'youtube'
 API_VERSION = 'v3'
-API_KEY = ''
+API_KEY = 'AIzaSyBJDLpU7M86r_WgW--1SqZ1x5nOuyXPlI0'
+
 
 def get_authenticated_service():
     ###flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
@@ -51,7 +50,11 @@ def model_video_response(response, category):
 
         for video in response['items']:
 
-            print("--------------------\n video \n -------------------------")
+            #print("--------------------\n video \n -------------------------")
+            if 'tags' in video['snippet']:
+                print('Yes')
+            else:
+                print('No')
 
             data['videoId'] = video['id']['videoId']
 
@@ -69,15 +72,14 @@ def model_video_response(response, category):
 
             data['category'] = category
 
-            json_data = json.dumps(data)
-
-            # print(json_data)
-
-            response1=videos_list_by_id(client,part='statistics',id=data['videoId'])
+            # Making requet for fetching snippet and statistics data for the given video
+            response1=videos_list_by_id(client,part='snippet,statistics',id=data['videoId'])
 
            # print(response1)
+           # Iterating over the response1 list
             try :
                 for v in response1['items']:
+                    # Parsing the video statistics and dumping them to MemSQL folder
                     d['viewCount']=v['statistics']['viewCount']
                     d['likeCount'] = v['statistics']['likeCount']
                     d['dislikeCount'] = v['statistics']['dislikeCount']
@@ -85,16 +87,28 @@ def model_video_response(response, category):
                     d['commentCount'] = v['statistics']['commentCount']
                     d['videoId'] = data['videoId']
                     json_d = json.dumps(d)
+
+                    # Constructing JSON object for tags
+                    try:
+                        tags_object = {'videoId': data['videoId'], 'category' : data['category'], 'tags' : v['snippet']['tags'] }
+                    except Exception as e:
+                        print("Error is constructing object")
+
+                    # Writting JSON object into the VideoTags file
+                    try:
+                        with open('/home/inspire/Desktop/videoTags', 'a') as outfile:
+                            json.dump(tags_object, outfile)
+                    except Exception as e:
+                        print (e)
                     #print(json_d)
             except Exception as e:
                 print "Error"
             else:
-                print "Success for Video ID"+d['videoId']
+                #print "Success for Video ID"+d['videoId']
                 producer.send('statistics_topic', json.dumps(d))
-
+                a = 2
             print str(data) + "\n"
             producer.send('videos_topic', json.dumps(data))
-
 
         '''
         Not to be disturbed
@@ -201,8 +215,6 @@ def videos_list_by_id(client, **kwargs):
 
   return response
 
-
-
 if __name__ == '__main__':
     # When running locally, disable OAuthlib's HTTPs verification. When
     # running in production *do not* leave this option enabled.
@@ -214,7 +226,7 @@ if __name__ == '__main__':
                           regionCode='US')
 
 
-    mydatetime = datetime.datetime.now() - datetime.timedelta(days=2*365)
+    mydatetime = datetime.datetime.now() - datetime.timedelta(days=1*365)
     days = 0
 
     while True:
