@@ -4,7 +4,9 @@ import os
 import json
 import time
 import google.oauth2.credentials
-from datetime import datetime, timedelta
+import datetime
+from rfc3339 import rfc3339
+
 
 
 
@@ -44,9 +46,12 @@ def model_video_response(response, category):
     data = {}
     d={}
     if response == None:
-        print("No data for category")
+        print("No data for")
     else:
+
         for video in response['items']:
+
+            print("--------------------\n video \n -------------------------")
 
             data['videoId'] = video['id']['videoId']
 
@@ -96,9 +101,13 @@ def model_video_response(response, category):
             #producer = KafkaProducer(value_serializer = lambda v:json.dumps(v).encode('utf-8'))
         '''
 
+
+
+
 def model_category_response(response):
     data = {}
     categories = []
+
 
     for c in response['items']:
         categories.append(c['snippet']['title'])
@@ -129,55 +138,7 @@ def build_resource(properties):
 
             if pa == (len(prop_array) - 1):
                 # Leave properties without values out of inserted resource.
-                iffor video in response['items']:
-
-            data['videoId'] = video['id']['videoId']
-
-            data['publishedAt'] = video['snippet']['publishedAt']
-
-            data['channelId'] = video['snippet']['channelId']
-
-            data['title'] = video['snippet']['title']
-
-            data['description'] = video['snippet']['description']
-
-            data['url'] = video['snippet']['thumbnails']['default']['url']
-
-            data['channelTitle'] = video['snippet']['channelTitle']
-
-            data['category'] = category
-
-            json_data = json.dumps(data)
-
-            # print(json_data)
-
-            response1=videos_list_by_id(client,part='statistics',id=data['videoId'])
-
-           # print(response1)
-            try :
-                for v in response1['items']:
-                    d['viewCount']=v['statistics']['viewCount']
-                    d['likeCount'] = v['statistics']['likeCount']
-                    d['dislikeCount'] = v['statistics']['dislikeCount']
-                    d['favoriteCount'] = v['statistics']['favoriteCount']
-                    d['commentCount'] = v['statistics']['commentCount']
-                    d['videoId'] = data['videoId']
-                    json_d = json.dumps(d)
-                    #print(json_d)
-            except Exception as e:
-                print "Error"
-            else:
-                print "Success for Video ID"+d['videoId']
-                producer.send('statistics_topic', json.dumps(d))
-
-            print str(data) + "\n"
-            producer.send('videos_topic', json.dumps(data))
-
-
-        '''
-        Not to be disturbed
-            #producer = KafkaProducer(value_serializer = lambda v:json.dumps(v).encode('utf-8'))
-        ''' properties[p]:
+                if properties[p]:
                     if is_array:
                         ref[key] = properties[p].split(',')
                     else:
@@ -253,20 +214,33 @@ if __name__ == '__main__':
                           regionCode='US')
 
 
+    mydatetime = datetime.datetime.now() - datetime.timedelta(days=2*365)
+    days = 0
 
+    while True:
 
-    i = 0
-    for category in categories:
+        days = days + 1
 
-        #nine_hours_from_now = datetime.now().isoformat() + timedelta(hours=9)
+        mydatetime1 = mydatetime + datetime.timedelta(days=days)
+        mydatetime2 = mydatetime + datetime.timedelta(days=days+1)
 
-        #print("The category is {}".format(category))
-        search_list_by_keyword(client,
-                              part='snippet',
-                              maxResults=50,
-                              q=category,
-                              publishedBefore='2017-07-16T19:20:30-03:00',
-                              type='video')
-        i = i+1
-        time.sleep(1)
-        print category + str(i)
+        #2017-07-16T19:20:30-03:00
+        #2013-12-29T19:09:07.630167
+
+        print(mydatetime)
+        print(mydatetime.isoformat('T'))
+
+        for category in categories:
+
+            #nine_hours_from_now = datetime.now().isoformat() + timedelta(hours=9)
+
+            #print("The category is {}".format(category))
+            search_list_by_keyword(client,
+                                  part='snippet',
+                                  maxResults=50,
+                                  q=category,
+                                  publishedAfter = str(rfc3339(mydatetime1)),
+                                  publishedBefore = str(rfc3339(mydatetime2)),
+                                  type='video')
+
+            time.sleep(1)
