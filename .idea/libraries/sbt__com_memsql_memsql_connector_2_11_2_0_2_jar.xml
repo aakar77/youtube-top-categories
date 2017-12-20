@@ -1,5 +1,5 @@
 <component name="libraryTable">
-  <library name="sbt: com.memsql:memsql-connector_2.11:2.0.2:jar">
+  <library name="SBT: com.memsql:memsql-connector_2.11:2.0.2:jar">
     <CLASSES>
       <root url="jar://$USER_HOME$/.ivy2/cache/com.memsql/memsql-connector_2.11/jars/memsql-connector_2.11-2.0.2.jar!/" />
     </CLASSES>

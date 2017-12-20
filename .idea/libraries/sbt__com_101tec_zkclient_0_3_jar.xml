@@ -1,5 +1,5 @@
 <component name="libraryTable">
-  <library name="sbt: com.101tec:zkclient:0.3:jar">
+  <library name="SBT: com.101tec:zkclient:0.3:jar">
     <CLASSES>
       <root url="jar://$USER_HOME$/.ivy2/cache/com.101tec/zkclient/jars/zkclient-0.3.jar!/" />
     </CLASSES>
