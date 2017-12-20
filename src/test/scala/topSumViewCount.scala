@@ -65,13 +65,13 @@ object topSumViewCount {
 
     // Part 1 -- Getting the top videos in each and every category on the basis of view counts
     val topViewStats =
-      """ SELECT category, SUM(viewCount) as avgViewCount
+      """ SELECT category, SUM(viewCount) as sumViewCount
         |  FROM ( SELECT viewCount, videoId, category, likeCount, row_number()
         |         over (PARTITION BY category ORDER BY viewCount DESC) as r
         |         FROM CategoryData as T) as T
         |  WHERE T.r<=100
         |  GROUP BY category
-        |  ORDER BY avgViewCount DESC
+        |  ORDER BY sumViewCount DESC
       """.stripMargin
 
     val topViewStats_DF = spark.sql(topViewStats)
